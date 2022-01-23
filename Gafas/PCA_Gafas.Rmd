@@ -10,3 +10,272 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+# Componentes principales y análisis de imágenes
+En este documento se explora la aplicación del análisis de componentes principales sobre imágenes.
+
+Las imágenes han sido obtenidas de "cierto lugar" y se han descargado 1500 imágenes.
+
+Para citar el uso de las imágenes se usa la siguiente referencia
+
+# Colocar la cita de kaggle
+Holland, C. A. C., Ebner, N. C., Lin, T., & Samanez-Larkin, G. R. (2019). Emotion identification across adulthood using the Dynamic FACES database of emotional expressions in younger, middle aged, and older adults. Cognition and Emotion, 33, 245-257. [doi:10.1080/02699931.2018.1445981](doi:10.1080/02699931.2018.1445981).
+
+# Carga de las imágenes
+Se utilizarán algunas funciones de la librería `imager` para la carga y la transformación de las imágenes.
+
+A continuación se carga la librería `imager` y se indica el directorio donde se encuentran las imágenes:
+
+```{r message=FALSE}
+library(imager)
+filenames <- list.files(path = "./Procesadas_Fotos", pattern="*.jpg")
+```
+
+El objeto `filenames` es una lista que contiene las imágenes. Para cargar una imagen con la funcón `load.image()` se debe indicar la ruta completa. Para completar el nombre de la ruta se usa la función `paste0()`:
+
+```{r message=FALSE}
+im <- load.image(paste0("./Procesadas_Fotos",filenames[1]))
+plot(im)
+```
+
+La dimensión de la imagen es:
+
+```{r}
+dim(im)
+```
+
+Esto quiere decir que el objeto `im` es una sola imagen de $2835 \times 3543$ pixeles, con tres canales de color (RGB).
+
+Ahora se utiliza la función `resize()` para reducir la imagen a diferentes tamaños que corresponden aproximadamente al 1%, 5%, 10% y 20% del tamaño original:
+
+```{r}
+par(mfrow=c(2,2))
+plot(resize(grayscale(im),28,36),main="0.01%")
+plot(resize(grayscale(im),143,177),main="0.25%")
+plot(resize(grayscale(im),283,354),main="1%")
+plot(resize(grayscale(im),567,709),main="4%") 
+```
+
+# Leer y transformar todas las imágenes
+
+La librería `imager` contiene una serie de funciones para leer las imágenes de un directorio y convertirlas luego en un dataframe. Para ilustrar este proceso con un poco más de detalles se usará una función, `leer_y_trs_img()`, construida para mostrar cada paso de la transformación:
+
+```{r}
+leer_y_trs_img<-function(img_name,path=NULL,x_l=10,y_l=10){
+  require(imager)
+  img_nombre<-paste0(path,img_name) # completa el nombre de la imagen con la ruta
+  imagen<-load.image(img_nombre) # carga la imagen
+  img_gris<-grayscale(imagen) # convierte la imagen a escala de grises
+  img_escalada<-resize(img_gris,x_l,y_l) # reescala la imagen
+  return(img_escalada)
+}
+```
+
+A continuación se muestra usa la función para cargar una sola imagen:
+
+```{r}
+x<-leer_y_trs_img(filenames[1],path="./Procesadas_Fotos",x_l = 57,y_l = 71)
+plot(x)
+```
+
+Ahora se procede a cargar todas las imágenes que se indican en `filenames` usando `lapply()`:
+
+```{r}
+lista_imagenes = lapply(filenames, leer_y_trs_img,path="./Procesadas_Fotos",x_l = 57,y_l = 71) 
+```
+
+El objeto `lista_imagenes` es una lista de imágenes. Cada componente es una imagen y se puede utilizar así:
+
+```{r}
+par(mfrow=c(1,2))
+plot(lista_imagenes[[2]])
+plot(lista_imagenes[[8]])
+```
+
+Ahora se vectorizan las imágenes. Es decir, que vista la imagen como una matriz, sus columnas se ponen una debajo de la otra hasta obtener un vector. Estos vectores luego serán las filas de una matriz de datos donde cada pixel representa una variable y cada imagen representa una observación. El resultado de hacer esto para todas las imágenes es una matriz que tiene tantas filas como imágenes y tantas columnas como pixeles tengan las imágenes. La función `as.numeric()` aplicada sobre cada imagen devuelve un vector. Se aplica entonces la función  `as.numeric()` sobre cada entrada del objeto `lista_imagenes` con la función `lapply()`.
+
+```{r}
+imagenes_vectorizadas<-lapply(lista_imagenes, as.numeric)
+length(imagenes_vectorizadas[[1]]) # longitud del vector que representa la primera imagen
+length(imagenes_vectorizadas) # cantidad de imágenes
+```
+El resultado, `imagenes_vectorizadas`, es una lista de vectores que se concatenan llamando `rbind()` con `do.call()`:
+
+```{r}
+matriz_imagenes = do.call('rbind', imagenes_vectorizadas)
+dim(matriz_imagenes) # dimensión de la matriz resultante
+# as.data.frame.imlist es una alternativa
+```
+# Estadísticos descriptivos
+
+Al tener una matriz de datos se pueden hacer todo lo que se hace con una matriz de datos. Sin embargo, el gran número de variables hace que utilizar la función `summary()` o la función `pairs()` sea poco práctico. Una aproximación puede ser generar estadísticas de resumen para cada pixel y luego ver estas estadísticas en forma de imágenes. 
+
+Veamos por ejemplo la imagen media:
+
+```{r}
+imagen_media_vec<-apply(matriz_imagenes,2,mean) # calcula el valor promedio para cada pixel (columna)
+length(imagen_media_vec) # longitud de la imagen promedio como vector
+```
+
+Ahora convirtamos la imagen promedio vectorizada en una imagen usando la función `as.cimg()`:
+
+```{r}
+imagen_media<-as.cimg(array(imagen_media_vec,dim=c(57,71)))
+plot(imagen_media)
+```
+
+De igual manera se puede calcular la imagen que representa las desviaciones estándar para cada pixel:
+
+```{r}
+imagen_sd_vec<-apply(matriz_imagenes,2,sd)
+imagen_sd<-as.cimg(array(imagen_sd_vec,dim=c(57,71)))
+plot(imagen_sd)
+```
+
+# Descartando información poco relevante
+
+La imagen de desviaciones estándares nos muestra varias zonas negras, donde el valor es cero. Estas zonas de baja variabilidad corresponden a pixeles poco informativos en esta muestra de imágenes. El fondo de la imagen, común para todos los individuos es, por ejemplo, una zona de baja variabilidad. Usemos el histograma de la imagen de desviaciones estándares para detectar estas zonas de baja variabilidad:
+
+```{r}
+MASS::truehist(imagen_sd)
+```
+
+Consideraremos que pixeles con una variabilidad inferior a 0.05 no serán relevantes en los siguientes análisis. La función `threshold()` asigna un 0 a cada pixel cuya intensidad está por debajo de cierto valor y 1 al resto de pixeles y nos devuelve una imagen. A continuación se usa esta función especificando un valor de umbral de 0.05:
+
+```{r}
+imagen_sd_tr<-threshold(imagen_sd,thr = 0.05)
+plot(imagen_sd_tr)
+```
+
+La imagen `imagen_sd_tr` es una máscara. Las zonas en blanco representan los pixeles que se incluirán en los análisis y las zonas en negro los pixeles que se descartarán por su baja variabilidad.
+
+Veamos cuantos pixeles se descartan:
+
+```{r}
+table(imagen_sd_tr)
+```
+
+Calculemos el porcentaje de información descartada:
+
+```{r}
+table(imagen_sd_tr)[1]/sum(table(imagen_sd_tr))*100
+```
+
+Esto quiere decir que aproximadamente el 18% de los datos están en zonas de baja variabilidad. Ahora identificamos los pixeles por fuera de las zonas de baja variabilidad usando la función `which()` y almacenamos la ubicación de estos pixeles en el objeto `mascara`:
+
+```{r}
+mascara<-which(imagen_sd_tr==1)
+```
+
+Ahora se extraen los datos correspondientes a los pixeles por fuera de la zona de baja variabilidad usando el objeto `mascara` para identificar las columnas relevantes en la `matriz_imagenes`. El resultado se almacena en el dataframe `datos_con_mascara`:
+
+```{r}
+datos_con_mascara<-matriz_imagenes[,mascara]
+dim(datos_con_mascara)
+```
+
+# Análisis de componentes principales
+
+A continuación se procederá a hacer una análisis de componentes principales sobre las imágenes. El primer paso será centrar y escalar la matriz de datos con la función `scale()`. Esto quiere decir que a cada columna se le resta su media y se divide por su desviación estándar. El resultado se almacena en el objeto `datos_mascara_centrados`:
+
+```{r}
+datos_mascara_centrados<-scale(datos_con_mascara,center = TRUE,scale = TRUE)
+dim(datos_mascara_centrados)
+```
+Notemos que nuestra matriz de datos tiene muchas más variables (3308) que observaciones (72). Esto hace que no se pueda usar la función `princomp()` para hacer el análisis de componentes principales. En su lugar se usa la función `prcomp()`, que utiliza la [descomposición en valores singulares](https://en.wikipedia.org/wiki/Singular_value_decomposition). A lo sumo se tendrán tantas componentes como observaciones (o filas de la matriz de datos):
+
+```{r}
+modelo_pca<-prcomp(datos_mascara_centrados)
+summary(modelo_pca)
+```
+
+
+Las primeras 33 componentes principales explican aproximadamente el 90% de la variabilidad de los datos. Tomaremos los primeros 33 vectores propios (o en este caso vectores singulares) para formar las 33 primeras componentes principales:
+
+```{r}
+eigen_modes_prin<-modelo_pca$rotation[,1:33]
+dim(eigen_modes_prin)
+```
+
+Ahora se multiplicará cada imagen por los 33 vectores propios para representarla usando solo 33 variables:
+
+```{r}
+datos_red<-datos_mascara_centrados%*%eigen_modes_prin
+dim(datos_red)
+```
+
+El resultado es una matriz de 72 filas y 33 columnas. Cada fila corresponde a un individuo y cada columna a una de las 33 primeras componentes principales.
+
+# Análisis de características en el espacio de componentes principales
+
+Trataremos de ver si las en el espacio de las componentes principales es posible observar agrupaciones de imágenes por características. En la base de imágenes los individuos pueden ser jóvenes, adultos o adultos mayores, hombres o mujeres o tener una expresión facial específica: neutral (n), disgusto (d), miedo (f), felicidad (h), tristeza (s) o rabia (a). 
+
+Esta información esta codificada en el nombre de la imagen, veamos cómo:
+
+```{r}
+head(filenames)
+```
+
+
+Así, las características pueden extraerse usando la función `substr()`:
+
+```{r}
+edad<-substr(filenames,start=5,stop=5)
+sexo<-substr(filenames,start=7,stop=7)
+expresion<-substr(filenames,start=9,stop=9)
+```
+
+Veamos ahora cómo se agrupan las características en el espacio de las primeras cinco componentes principales usando la función `pairs()`:
+
+```{r}
+pairs(datos_red[,1:5],col=as.factor(edad), main="Edad")
+```
+
+```{r}
+pairs(datos_red[,1:5],col=as.factor(sexo), main="Sexo")
+```
+
+```{r}
+pairs(datos_red[,1:5],col=as.factor(expresion), main="Expresión")
+```
+
+# ¿Qué significa cada modo?
+
+Veamos ahora la representación de cada vector propio. Para ello convertiremos cada vector propio en una imagen. Primero se crea una matriz que tendrá 33 filas, una para cada vector propio y $57\times 71$ columnas. Usando la máscara definida anteriormente se llenan los pixeles (columnas) que sí tienen variabilidad:
+
+```{r}
+modas<-matrix(0,ncol=57*71,nrow=33)
+modas[,mascara]<-t(eigen_modes_prin)
+```
+
+La función `sweep()` permite reescalar las modas multiplicándolas por las desviaciones estándar y luego sumándole la imagen media:
+
+```{r}
+modas_escaladas<-sweep(modas,2,FUN='*',imagen_sd_vec)
+modas_centradas<-sweep(modas_escaladas,2,FUN='+',imagen_media_vec)
+```
+
+Ahora se convierte cada moda en una imagen:
+
+```{r}
+modas_img_escalanat<-list()
+modas_img<-list()
+for (i in 1:33){
+  modas_img[[i]]<-as.cimg(modas[i,],x=57,y=71)
+  modas_img_escalanat[[i]]<-as.cimg(modas_centradas[i,],x=57,y=71)
+}
+```
+
+Finalmente visualizamos las primeras seis modas (sin reescalar):
+
+```{r message=FALSE, warning=FALSE}
+par(mfrow=c(3,2))
+lapply(X=1:6,FUN=function(x){plot(modas_img[[x]],main=paste0("Moda ",x))})
+```
+
+
+
+
+
+
+
+
