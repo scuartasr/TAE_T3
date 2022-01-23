@@ -1,0 +1,114 @@
+---
+title: "Análisis de imagenes con análisis de componentes principales y regresión logística"
+author: "Equipo, TAE"
+date: "Enero 31 de 2022"
+output:
+  html_document:
+    code_folding: show
+    toc: true
+    theme: paper
+    df_print: paged
+    number_sections: true
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r Lectura de librerías, include = FALSE, message = FALSE, warning = FALSE}
+# Lectura de librerías importantes
+library(imager)
+library(tidyverse)
+library(DT)
+library(caret)
+library(OpenImageR)
+library(matrixcalc)
+```
+
+
+# Introducción
+
+Las herramientas computaciones han venido avanzando a pasos agigantados en la última década, lo cual ha permitido que los diferentes dispositivos electrónicos a los que tenemos acceso permitan tener a disposición una mayor cantidad de recursos ocupando a la vez una menor cantidad de espacio y a un costo significativamente menor en comparación con los primeros dispositivos que salieron al mercado, dando la posibilidad a las masas y a pequeñas empresas acceder a varios de estos instrumentos tecnológicos, y así, permitiendo la elaboración de proyectos más complejos con ayuda de estos implementos.
+
+Con esto, aprovechando las herramientas tecnólogicas que se tienen a la mano, se va a abordar el problema de analizar un conjunto de imágenes para determinar si las personas que están retratadas en estas están empleando gafas, y para conseguir esto se van a apelar a dos técnicas de aprendizaje estadístico muy empleadas en la actualidad: el **análisis de componentes principales**, con los cuales se podrá enfocar el algoritmo a construir para que use únicamente aquellos elementos que verdaderamente son relevantes entre la información que obtiene del conjunto de imágenes, y la **regresión logística**, que a pesar de su nombre, es muy útil para llevar a cabo tareas de **clasificación**, y que en este caso es esencial en tanto su clasificación es precisamente binaria.
+
+# Documentación
+
+Para poder llevar a cabo la clasificación de imágenes de personas según si están luciendo gafas o no, es necesario contar con varios centenares de fotos de personas que permitan alimentar el algoritmo. Además, se debe tener en cuenta que van a existir dos conjuntos de imágenes diferentes: uno de **entrenamiento**, que contiene aproximadamente dos mil imágenes y con el cual se podrá generar el algoritmo que realice la clasificación; y otro de **validación**, compuesto por quinientas imágenes, y con el cual se pueda verificar si el algoritmo entrenado con el conjunto anterior hace la tarea para la cual fue creado adecuadamente.
+
+Así, es necesario crear estas dos bases de datos, y para conseguirlo, se emplearon las siguientres tres fuentes de imágenes:
+
+* **1.** ***Kaggle.*** [*Kaggle*](https://www.kaggle.com) es una plataforma reconocida en el ámbito de la ciencia de datos, y en este se llevan a cabo competiciones y se alojan bases de datos con los cuales se puedan crear algoritmos de aprendizaje automático para poner en práctica los conocimientos de sus participantes. Entre estas bases de datos existe (una)[https://www.kaggle.com/jeffheaton/glasses-or-no-glasses] denominada "*Glasses or No Glasses*", en la que se incluyen cinco mil imágenes de personas con y sin gafas ordenadas de forma aleatoria, por lo que se tomaron las primeras dos mil imágenes de esta base de datos. Todas las imágenes de esta fuente fueron empleadas para alimentar el conjunto de entrenamiento.
+* **2.** Al inspeccionar la base de datos de *Kaggle* se observa que esta no tenía de suficientes fotografías de personas usando gafas de sol y diferentes a perspectivas frontales del rostro, por lo que se seleccionan diversas imágenes en [*Google Images*](https://images.google.com/?gws_rd=ssl) para palear esta carencia. La totalidad de las fotografías obtenidas de *Google Images* han sido usadas en el conjunto de entrenamiento.
+* **3.** La Universidad de California en Irvine, conocida por sus siglas *UCI* posee una sitio web en el cual aloja diferentes bases de datos para poder usar en trabajos que impliquen [aprendizaje automático](https://archive.ics.uci.edu/ml/index.php), y entre ellas contienen una con quinientas imágenes de [personas](https://archive.ics.uci.edu/ml/datasets/CMU+Face+Images), entre ellas el uso o no gafas, por lo que resultan útiles para este trabajo y que serán usadas en el conjunto de validación.
+
+
+# Herramientas y materiales
+
+## Materiales principales
+
+Para la realización de este informe técnico, así como el planteamiento de la mayoría de los modelos predictivos que se presentarán más adelante se empló la versión 4.0.5 de $\color{#00008b}{\textsf{R}}$, el cual es un software de programación especializado en estadística y ciencia de datos. Además, para la escritura del código de este lenguaje se empleó la versión 2021.09.1 del enterno de desarrollo integrado $\color{#1ac5ff}{\textsf{R}}$$\color{#696969}{\textsf{Studio}}$. Además, para el procesamiento de las imágenes, de manera que tuvieran un formato adecuado para poder entrenar al algoritmo de clasificación, se usó a $\color{cyan}{\textsf{Python}}$, que es un lenguaje de programación muy popular y con uso en diversas áreas como la ciencia de datos. Además, se debe destacar que se usó al repositorio en línea $\textsf{GitHub}$ para poder guardar y compartir el código entre los autores de este trabajo, así como $\textsf{Google Drive}$ para el almacenamiento de las diferentes imágenes.
+
+## Materiales secundarios
+
+Vale la pena mencionar los paquetes de $\color{#00008b}{\textsf{R}}$ que más se emplearon en el marco de este trabajo para conseguir el desarrollo del modelo predictivo del número de vehículos registrados en el RUNT en el 2018:
+
+* $\color{purple}{\texttt{caret}}$. **Versión 6.0-90** de octubre de 2021. Este [paquete](https://cran.r-project.org/web/packages/caret/caret.pdf) de $\color{#00008b}{\textsf{R}}$ resalta como el más importante de todos, puesto que con él fue posible desarrollar algunos de los modelos que se presentarán más adelante. Este paquete es útil para la creación de modelos de clasificación y regresión, así como para la generación de gráficos que permitan estudiar los resultados que se obtienen con sus funciones. Este un paquete desarrollado por el ***R Core Team*** (el equipo base que ayuda a desarrollar y mantener al lenguaje R), **Max Kuhn, Jed Wing, Steve Weston, Andre Williams, Chris Keefer, Allan Engelhardt, Tony Cooper** y **Breton Kenkel**, entre otros.
+
+* $\color{purple}{\texttt{DT}}$. **Versión 0.20** Este [paquete](https://cran.r-project.org/web/packages/DT/index.html) de $\color{#00008b}{\textsf{R}}$ permite formatear tablas creadas con código de $\color{#00008b}{\textsf{R}}$ para luego ser presentadas con un estilo sobrio, elegante y sencillo, de forma que los lectores puedan entender amigablemente las tablas presentadas.
+
+* $\color{purple}{\texttt{tidyverse}}$. **Versión 1.3.1.** Este es un [paquete](https://www.tidyverse.org/packages/) de $\color{#00008b}{\textsf{R}}$ desarrollado por **Hadley Wickham** que incluye otros paquetes como $\texttt{dplyr}$ y $\texttt{ggplot2}$, que fueron usados con frecuencia en este trabajo y que facilitan el manejo, análisis, transformación de bases de datos, así como la creación de gráficos elegantes y llamativos.
+
+* $\color{purple}{\texttt{cv2}}$. **Versión 4.5.5.62.**. También conocido como $\texttt{OpenCV}$, es un [modulo](https://pypi.org/project/opencv-python/) de $\color{cyan}{\textsf{Python}}$ enfocado a trabajas relacionados como **visión artificial** y que fue empleado en este trabajo para poder realizar el procesamiento inicial de las fotografías de la base de datos.
+
+* $\color{purple}{\texttt{glob}}$. Es un [modulo](https://docs.python.org/3/library/glob.html) de $\color{cyan}{\textsf{Python}}$ que resulta útil para el trabajo con direcciones de archivos y carpetas en un computador y que en este caso fue importante durante la etapa de preprocesamiento de imágenes para poderlas listas a varias de ellas y no tener que hacer el trabajo de forma manual con cada imágen.
+
+* $\color{purple}{\texttt{os}}$. Es un [modulo](https://docs.python.org/3/library/os.html) de $\color{cyan}{\textsf{Python}}$ que resulta útil para el trabajo con direcciones de archivos y carpetas en un computador y que en este caso fue importante durante la etapa de preprocesamiento de imágenes para poderlas ubicar en las carpetas en las que estabas ubicadas y situarlas en un nuevo fólder después de ser procesadas.
+
+
+
+# Desarrollo
+
+Debido a que las imágenes con las que se a abordar este trabajo poseen características muy diferentes entre sí, se las va a llevar a cada una de ellas a una escala particular, que en este corresponde a $171 \times 213$, esto es, 171 pixeles de ancho 213 pixeles de alto, y luego se las deja en una escala de grises. A continuación se muestra el ejemplo con una imagen particular.
+
+En la figura uno se puede ver una de las imágenes empleadas, la cual tiene las dimensiones y el color con el que fue obtenido de Internet.
+
+```{r, fig.cap= " Ejemplo de una fotografía empleada. Esta retrata al personaje Dwight Schrute de la serie 'The Office'"}
+filenames = list.files(path = "./Fotos", pattern="*.jpg")
+ejem = load.image(paste0("./Fotos/",filenames[172]))
+plot(ejem,
+     main = "Ejemplo de una fotografía empleada",
+     xlab = "Coordenada en x",
+     ylab = "Coordenada en y")
+```
+
+Nótese que el eje vertical apunta hacia cantidad positivas hacia abajo, mientras que el eje horizontal apunta hacia cantidad positivas hacia la derecha. A continuación, con el programa escrito en $\color{cyan}{\textsf{Python}}$ se realiza su procesamiento para escalarlo y dejarlo en escala de grises, obteniendo el resultado que se observa a continuación:
+
+```{r}
+filenames = list.files(path = "./Procesadas_Fotos", pattern="*.jpg")
+ejem = load.image(paste0("./Procesadas_Fotos/",filenames[90]))
+plot(ejem,
+     main = "Ejemplo de una fotografía empleada",
+     xlab = "Coordenada en x",
+     ylab = "Coordenada en y")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
