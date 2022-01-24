@@ -205,7 +205,7 @@ dim(datos_red)
 
 El resultado es una matriz de 72 filas y 33 columnas. Cada fila corresponde a un individuo y cada columna a una de las 33 primeras componentes principales.
 
-# Análisis de características en el espacio de componentes principales
+# Análisis de características en el espacio de componentes principales (opcional)
 
 Trataremos de ver si las en el espacio de las componentes principales es posible observar agrupaciones de imágenes por características. En la base de imágenes los individuos pueden ser jóvenes, adultos o adultos mayores, hombres o mujeres o tener una expresión facial específica: neutral (n), disgusto (d), miedo (f), felicidad (h), tristeza (s) o rabia (a). 
 
