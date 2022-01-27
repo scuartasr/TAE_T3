@@ -6,3 +6,5 @@ Gafas/Procesadas_Fotos/image98.jpg
 Gafas/Procesadas_Fotos/image00.jpg
 *.jpg
 *.png
+*.pgm
+*.bad

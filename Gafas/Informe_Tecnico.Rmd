@@ -98,6 +98,10 @@ plot(ejem,
      ylab = "Coordenada en y")
 ```
 
+```{r}
+dim(ejem)
+```
+
 
 ## Etc.
 
