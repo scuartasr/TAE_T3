@@ -61,7 +61,7 @@ plot(x)
 
 Ahora se procede a cargar todas las imágenes que se indican en `filenames` usando `lapply()`:
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 lista_imagenes = lapply(filenames, leer_y_trs_img,path="./Procesadas_Fotos/",x_l = 57,y_l = 71) 
 ```
 
@@ -121,10 +121,10 @@ La imagen de desviaciones estándares nos muestra varias zonas negras, donde el 
 MASS::truehist(imagen_sd)
 ```
 
-Consideraremos que pixeles con una variabilidad inferior a 0.05 no serán relevantes en los siguientes análisis. La función `threshold()` asigna un 0 a cada pixel cuya intensidad está por debajo de cierto valor y 1 al resto de pixeles y nos devuelve una imagen. A continuación se usa esta función especificando un valor de umbral de 0.05:
+Consideraremos que pixeles con una variabilidad inferior a 0.26 no serán relevantes en los siguientes análisis. La función `threshold()` asigna un 0 a cada pixel cuya intensidad está por debajo de cierto valor y 1 al resto de pixeles y nos devuelve una imagen. A continuación se usa esta función especificando un valor de umbral de 0.26:
 
 ```{r}
-imagen_sd_tr<-threshold(imagen_sd,thr = 0.05)
+imagen_sd_tr<-threshold(imagen_sd,thr = 0.26)
 plot(imagen_sd_tr)
 ```
 
@@ -142,7 +142,7 @@ Calculemos el porcentaje de información descartada:
 table(imagen_sd_tr)[1]/sum(table(imagen_sd_tr))*100
 ```
 
-Esto quiere decir que aproximadamente el 18% de los datos están en zonas de baja variabilidad. Ahora identificamos los pixeles por fuera de las zonas de baja variabilidad usando la función `which()` y almacenamos la ubicación de estos pixeles en el objeto `mascara`:
+Esto quiere decir que aproximadamente el 10% de los datos están en zonas de baja variabilidad. Ahora identificamos los pixeles por fuera de las zonas de baja variabilidad usando la función `which()` y almacenamos la ubicación de estos pixeles en el objeto `mascara`:
 
 ```{r}
 mascara<-which(imagen_sd_tr==1)
@@ -154,3 +154,5 @@ Ahora se extraen los datos correspondientes a los pixeles por fuera de la zona d
 datos_con_mascara<-matriz_imagenes[,mascara]
 dim(datos_con_mascara)
 ```
+
+# Lo que hay en la última salida es para hacer el PCA
