@@ -101,16 +101,18 @@ plot(ejem,
 ```{r}
 dim(ejem)
 ```
-Para el conjunto de validación aplicamos el mismo re-escalamiento de la dimensión de las imágenes que a corresponde a $171 \times 213$. Para este formato de imágenes cargamos una librería pixmap puesto que su formato (.pgm) es diferente a el de las imágenes de entrenamiento, se creó una carpeta en Drive donde se ubicaron todas las imágenes re-escaladas en el archivo descargado se encontraban 3 versiones de cada imagen, se eligió solo la imagen con mayor tamaño y mejor definición de píxeles. A está carpeta le ponemos el nombre de Procesadas_Faces y tomamos una imagen como ejemplo. 
+Para el conjunto de validación aplicamos el mismo re-escalamiento de la dimensión de las imágenes que a corresponde a $171 \times 213$. Para este formato de imágenes cargamos una librería pixmap puesto que su formato (.pgm) es diferente a el de las imágenes de entrenamiento, se creó una carpeta en Drive donde se ubicaron todas las imágenes re-escaladas en el archivo descargado se encontraban 3 versiones de cada imagen, se eligió solo la imagen con mayor tamaño y mejor definición de píxeles. A está carpeta le ponemos el nombre de Procesadas_Faces y tomamos dos imágenes como ejemplo una con gafas y otra sin gafas. 
 
 ```{r}
 library(pixmap)
 x1= read.pnm(file = "image159.pgm")
+x2= read.pnm(file = "image60.pgm")
 ```
 En este gráfico notamos el respectivo re-escalamiento y el color de la imagen, como ya estaba en escala de grises no tuvimos que cambiar el formato de color del conjunto de validación.
 
 ```{r}
-plot(x1,main = "Ejemplo", axes=T)
+plot(x1,main = "Ejemplo1", axes=T)
+plot(x2,main = "Ejemplo2", axes=T)
 ```
 
 
