@@ -182,7 +182,13 @@ plot(ejem,
 
 
 
+# Referencias
 
+- Cant convert a pandas series to a numpy array with dtype np float64, stack overflow. Visitado el 28/01/2022. Recuperado de [https://stackoverflow.com/questions/65044042/cant-convert-a-pandas-series-to-a-numpy-array-with-dtype-np-float64].
+
+- MultiClass Image Classification using keras. Prateek M. Visitado el 28/01/2022. Recuperado de [https://www.kaggle.com/prateek0x/multiclass-image-classification-using-keras]
+
+- Confusion Matrix for Your Multi-Class Machine Learning Model. Joydwip M. Visitado el 28/01/2022. Recuperado de [https://towardsdatascience.com/confusion-matrix-for-your-multi-class-machine-learning-model-ff9aa3bf7826]
 
 
 
