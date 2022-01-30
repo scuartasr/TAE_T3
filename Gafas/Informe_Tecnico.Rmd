@@ -91,8 +91,7 @@ Debido a que las imágenes con las que se a abordar este trabajo poseen caracter
 En la figura uno se puede ver una de las imágenes empleadas, la cual tiene las dimensiones y el color con el que fue obtenido de Internet.
 
 ```{r, fig.cap= " Ejemplo de una fotografía empleada. Esta retrata al personaje Dwight Schrute de la serie 'The Office'"}
-filenames = list.files(path = "./Fotos", pattern="*.jpg")
-ejem = load.image(paste0("./Fotos/",filenames[172]))
+ejem = load.image(paste0("Entre_SinProcesar.jpg"))
 plot(ejem,
      main = "Ejemplo de una fotografía empleada",
      xlab = "Coordenada en x",
@@ -102,16 +101,11 @@ plot(ejem,
 Nótese que el eje vertical apunta hacia cantidad positivas hacia abajo, mientras que el eje horizontal apunta hacia cantidad positivas hacia la derecha. A continuación, con el programa escrito en $\color{cyan}{\textsf{Python}}$ se realiza su procesamiento para escalarlo y dejarlo en escala de grises, obteniendo el resultado que se observa a continuación:
 
 ```{r}
-filenames = list.files(path = "./Procesadas_Fotos", pattern="*.jpg")
-ejem = load.image(paste0("./Procesadas_Fotos/",filenames[90]))
+ejem = load.image(paste0("Entre_Procesado.jpg"))
 plot(ejem,
      main = "Ejemplo de una fotografía empleada",
      xlab = "Coordenada en x",
      ylab = "Coordenada en y")
-```
-
-```{r}
-dim(ejem)
 ```
 
 
