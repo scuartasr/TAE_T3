@@ -109,6 +109,19 @@ plot(ejem,
      sub = "Ejemplo de una fotografía procesada, con escala de grisis y reescalamiento. Esta retrata al personaje Dwight Schrute de la serie 'The Office'")
 ```
 
+Para el conjunto de validación aplicamos el mismo reescalamiento de la dimensión de las imágenes que a corresponde a $171 \times 213$. Para este formato de imágenes cargamos una librería pixmap puesto que su formato (.pgm) es diferente a el de las imágenes de entrenamiento, se creó una carpeta en Drive donde se ubicaron todas las imágenes re-escaladas en el archivo descargado se encontraban 3 versiones de cada imagen, se eligió solo la imagen con mayor tamaño y mejor definición de píxeles. A está carpeta se le asigna el nombre de **Procesadas_Faces** y se toman dos imágenes como ejemplo una con gafas y otra sin gafas. 
+
+```{r, warning=FALSE, message=F}
+library(pixmap)
+x1= read.pnm(file = "image159.pgm")
+x2= read.pnm(file = "image60.pgm")
+```
+En este gráfico notamos el respectivo reescalamiento y el color de la imagen, como ya estaba en escala de grises no tuvimos que cambiar el formato de color del conjunto de validación.
+
+```{r, fig.align='center'}
+plot(x1,main = "Ejemplo 1", axes=T)
+plot(x2,main = "Ejemplo 2", axes=T)
+```
 
 ## Modelo
 
@@ -137,7 +150,7 @@ plot(ejem,
 
 Además, la matriz de confusión:
 
-![jaja](MatrizC.png)
+![](MatrizC.png)
 
 
 ```{r, fig.align = 'center'}
