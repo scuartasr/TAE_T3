@@ -773,6 +773,18 @@ plot(ejem,
 
 - Confusion Matrix for Your Multi-Class Machine Learning Model. Joydwip M. Visitado el 28/01/2022. Recuperado de [https://towardsdatascience.com/confusion-matrix-for-your-multi-class-machine-learning-model-ff9aa3bf7826]
 
+- Regresión logística simple y múltiple. Joaquín R.
+Visitado el 28/01/2022. Recuperado de
+[https://www.cienciadedatos.net/documentos/27_regresion_logistica_simple_y_multiple.html]
 
+- Principal Component Analysis and t-SNE. Joaquín R.
+Visitado el 28/01/2022. Recuperado de
+[https://www.cienciadedatos.net/documentos/35_principal_component_analysis]
 
+- Red neuronal convolucional en R con Keras. Diego C.
+Visitado el 28/01/2022. Recuperado de
+[https://www.diegocalvo.es/red-neuronal-convolucional-en-r-con-keras/]
 
+- Redes neuronales convolucionales con TensorFlow. Raúl E.
+Visitado el 28/01/2022. Recuperado de
+[https://relopezbriega.github.io/blog/2016/08/02/redes-neuronales-convolucionales-con-tensorflow/]
