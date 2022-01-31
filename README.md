@@ -1,6 +1,10 @@
-# TAE_T3
+# Modelo de clasificación de imágenes
+
+## Introducción
 
 ¡Bienvenido! En este repositorio usted podrá encontrar lo relacionado con la realización de un modelo de clasificación para determinar si una persona retratada en una fotografía **porta gafas o no**, el cual fue desarrollado a partir de **redes neuronales convolucionales.** A continuación se describen algunos archivos de este repositorio, de manera que usted pueda ubicar fácilmente los documentos que aquí reposan.
+
+## Guía de GitHub
 
 1. *Gafas.* Carpeta en la que almacen documentos importantes para la creación del informe técnico de este proyecto
   1.1. **Entre_Procesado.jpg.** Imagen de ejemplo del conjunto de entrenamiento después de procesar, es decir, haciendo escalado y llevándolo a escala de grises.
@@ -24,3 +28,17 @@
   2.2. **Modelo_TAE_Trabajo3.ipynn.** Este archivo es un _notebook_ de _Python_ en los que se explica y se desarrolla el modelo creado para la clasificación de fotografías en función de si las personas retratadas en estas lucen gafas o no.
   2.3. **modelo.h5.** Es un documento que almacena información relacionada con la creación del modelo.
  
+## Guía de Google Drive
+
+Dado que GitHub no permite que se suban archivos o carpetas que superen un máximo de tamaño, fue necesario crear una carpeta de Drive en la que se subieran todas las fotos que fueron empleadas para este proyecto en sus dos versiones: sin procesar y procesada, de manera que a continuación se explican las carpetas existentes que faciliten la orientación en dicha carpeta general de Google Drive que puede ser accesada haciendo clic [aquí](https://drive.google.com/drive/folders/1i9FsDVCnzTZuZCHDFKEbgZLXSAEiY4NP?usp=sharing):
+
+1. **Train.** Esta carpeta toma todas las fotografías que fueron empleadas para entrenar el modelo y las divide en dos subcarpetas según las personas retratadas en estas portan gafas o no, de tal manera que el algoritmo pueda identificar los aspectos importantes de cada conjunto de cara a aprender cómo realizar buenas predicciones.
+2. **Procesadas_Fotos.** Carpeta con todas las fotografías que fueron obtenidas en _Google Images_ en escala de grises y reescaladas.
+3. **Procesafas_Faces.** Carpeta con las fotografías de la UCI que fueron empleadas para validar el modelo con reescalamiento de sus dimensiones.
+4. **Predicción.** Imágenes del conjunto de entrenamiento clasificadas en función de si las personas que aparecen en estas llevan puestas gafas o no.
+5. **Kaggle_NoGafas.** Imágenes obtenidas de _Kaggle_ procesadas y conteniendo únicamente personas sin gafas.
+6. **KaggleGafas.** Imágenes obtenidas de _Kaggle_ procesadas y conteniendo únicamente personas sin gafas.
+7. **Kaggle.** Imágenes obtenidas de _Kaggle_ de personas con y sin gafas y sin procesar, es decir, en sus condiciones originales tal y como fueron descargadas de la plataforma.
+8. **Fotos.** Imágenes obtenidas de _Google Images_ de personas con y sin gafas y sin procesar, en sus condiciones originales tal y como fueron descargadas.
+9. **Adiciones_NoGafas.** Imágenes adicionales que se descargaron de _Google Images_ de personas que no usan gafas y que se obtuvieron luego de un primer modelo para poder mejorar las métricas asociadas a este.
+10. **Adiciones_Gafas.** Imágenes adicionales que se descargaron de _Google Images_ de personas que usan gafas y que se obtuvieron luego de un primer modelo para poder mejorar las métricas asociadas a este.
