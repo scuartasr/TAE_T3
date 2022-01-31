@@ -34,6 +34,7 @@ library(DT)
 library(caret)
 library(OpenImageR)
 library(matrixcalc)
+library(pander)
 ```
 
 
@@ -129,6 +130,589 @@ En este gráfico notamos el respectivo reescalamiento y el color de la imagen, c
 plot(x1,main = "Ejemplo 1", axes=T)
 plot(x2,main = "Ejemplo 2", axes=T)
 ```
+
+## Estadísticos descriptivos
+
+### Carga de las imágenes Procesadas fotos
+
+Se utilizarán algunas funciones de la librería `imager` para la carga y la transformación de las imágenes.
+
+A continuación se carga la librería `imager` y se indica el directorio donde se encuentran las imágenes:
+
+```{r message=FALSE}
+library(imager)
+filenames <- list.files(path = "./Procesadas_Fotos", pattern="*.jpg")
+```
+
+El objeto `filenames` es una lista que contiene las imágenes. Para cargar una imagen con la funcón `load.image()` se debe indicar la ruta completa. Para completar el nombre de la ruta se usa la función `paste0()`:
+
+```{r message=FALSE}
+im <- load.image(paste0("./Procesadas_Fotos/",filenames[1]))
+plot(im,main="Ejemplo de imagen")
+```
+
+La dimensión de la imagen es:
+
+```{r}
+pander(dim(im))
+```
+
+Esto quiere decir que el objeto `im` es una sola imagen de $171 \times 213$ pixeles.
+
+#### Leer y transformar todas las imágenes
+
+La librería `imager` contiene una serie de funciones para leer las imágenes de un directorio y convertirlas luego en un dataframe. Para ilustrar este proceso con un poco más de detalles se usará una función, `leer_y_trs_img()`, construida para mostrar cada paso de la transformación:
+
+```{r}
+leer_y_trs_img<-function(img_name,path=NULL,x_l=10,y_l=10){
+  require(imager)
+  img_nombre<-paste0(path,img_name) # completa el nombre de la imagen con la ruta
+  imagen<-load.image(img_nombre) # carga la imagen
+  img_gris<-grayscale(imagen) # convierte la imagen a escala de grises
+  img_escalada<-resize(img_gris,x_l,y_l) # reescala la imagen
+  return(img_escalada)
+}
+```
+
+A continuación se muestra la función para cargar una sola imagen:
+
+```{r, warning=FALSE}
+x<-leer_y_trs_img(filenames[1],path="./Procesadas_Fotos/",x_l = 57,y_l = 71)
+plot(x,main="Imagen de la carpeta Procesadas_Fotos")
+```
+
+Ahora se procede a cargar todas las imágenes que se indican en `filenames` usando `lapply()`:
+
+```{r, warning=FALSE, message=FALSE}
+lista_imagenes = lapply(filenames, leer_y_trs_img,path="./Procesadas_Fotos/",x_l = 57,y_l = 71) 
+```
+
+El objeto `lista_imagenes` es una lista de imágenes. Cada componente es una imagen y se puede utilizar así:
+
+```{r}
+par(mfrow=c(1,2))
+plot(lista_imagenes[[2]],main="Ejemplo 1")
+plot(lista_imagenes[[8]],main="Ejemplo 2")
+```
+
+Ahora se vectorizan las imágenes. Es decir, que vista la imagen como una matriz, sus columnas se ponen una debajo de la otra hasta obtener un vector. Estos vectores luego serán las filas de una matriz de datos donde cada pixel representa una variable y cada imagen representa una observación. El resultado de hacer esto para todas las imágenes es una matriz que tiene tantas filas como imágenes y tantas columnas como pixeles tengan las imágenes. La función `as.numeric()` aplicada sobre cada imagen devuelve un vector. Se aplica entonces la función  `as.numeric()` sobre cada entrada del objeto `lista_imagenes` con la función `lapply()`.
+
+```{r warning=FALSE, message=FALSE}
+imagenes_vectorizadas<-lapply(lista_imagenes, as.numeric)
+```
+
+El resultado, `imagenes_vectorizadas`, es una lista de vectores que se concatenan llamando `rbind()` con `do.call()`. El resultado tiene esta dimensión:
+
+```{r}
+matriz_imagenes = do.call('rbind', imagenes_vectorizadas)
+pander(dim(matriz_imagenes)) # dimensión de la matriz resultante
+# as.data.frame.imlist es una alternativa
+```
+
+#### Estadísticos descriptivos - Procesadas fotos
+
+Al tener una matriz de datos se pueden hacer todo lo que se hace con una matriz de datos. Sin embargo, el gran número de variables hace que utilizar la función `summary()` o la función `pairs()` sea poco práctico. Una aproximación puede ser generar estadísticas de resumen para cada pixel y luego ver estas estadísticas en forma de imágenes. 
+
+Veamos por ejemplo la imagen media:
+
+```{r warning=FALSE, message=FALSE}
+imagen_media_vec<-apply(matriz_imagenes,2,mean) # calcula el valor promedio para cada pixel 
+```
+
+
+
+```{r}
+imagen_media<-as.cimg(array(imagen_media_vec,dim=c(57,71)))
+plot(imagen_media,main="Imagen media de la carpeta Procesadas Fotos")
+```
+
+De igual manera se puede calcular la imagen que representa las desviaciones estándar para cada pixel:
+
+```{r}
+imagen_sd_vec<-apply(matriz_imagenes,2,sd)
+imagen_sd<-as.cimg(array(imagen_sd_vec,dim=c(57,71)))
+plot(imagen_sd,main="Imagen SD de la carpeta Procesadas Fotos")
+```
+
+#### Descartando información poco relevante
+
+La imagen de desviaciones estándares nos muestra varias zonas negras, donde el valor es cero. Estas zonas de baja variabilidad corresponden a pixeles poco informativos en esta muestra de imágenes. El fondo de la imagen, común para todos los individuos es, por ejemplo, una zona de baja variabilidad. Usemos el histograma de la imagen de desviaciones estándares para detectar estas zonas de baja variabilidad:
+
+```{r}
+MASS::truehist(imagen_sd,main="Histograma de variabilidad de Imagen SD",xlab="Variabilidad",ylab="Frecuencia")
+```
+
+Consideraremos que pixeles con una variabilidad inferior a 0.26 no serán relevantes en los siguientes análisis. La función `threshold()` asigna un 0 a cada pixel cuya intensidad está por debajo de cierto valor y 1 al resto de pixeles y nos devuelve una imagen. A continuación se usa esta función especificando un valor de umbral de 0.26:
+
+```{r}
+imagen_sd_tr<-threshold(imagen_sd,thr = 0.26)
+plot(imagen_sd_tr,main="Máscara")
+```
+
+La imagen `imagen_sd_tr` es una máscara. Las zonas en blanco representan los pixeles que se incluirán en los análisis y las zonas en negro los pixeles que se descartarán por su baja variabilidad.
+
+Veamos cuantos pixeles se descartan:
+
+```{r}
+pander(table(imagen_sd_tr),style='simple')
+```
+
+Calculemos el porcentaje de información descartada:
+
+```{r}
+pander(table(imagen_sd_tr)[1]/sum(table(imagen_sd_tr))*100,style='simple')
+```
+
+Esto quiere decir que aproximadamente el 10% de los datos están en zonas de baja variabilidad.
+
+### Carga de las imágenes Kaggle no gafas
+
+Se repite el mismo procedimiento para la carpeta "Kaggle_NoGafas".
+```{r message=FALSE}
+library(imager)
+filenames <- list.files(path = "./Kaggle_NoGafas", pattern="*.png")
+```
+
+```{r message=FALSE}
+im <- load.image(paste0("./Kaggle_NoGafas/",filenames[1]))
+plot(im,main="Imagen de la carpeta Kaggle_NoGafas")
+```
+
+La dimensión de la imagen es:
+
+```{r}
+pander(dim(im))
+```
+
+Esto quiere decir que el objeto `im` es una sola imagen de $171 \times 213$ pixeles.
+
+#### Leer y transformar todas las imágenes
+
+A continuación se muestra usa la función para cargar una sola imagen:
+```{r, warning=FALSE}
+x<-leer_y_trs_img(filenames[1],path="./Kaggle_NoGafas/",x_l = 57,y_l = 71)
+plot(x,main="Imagen de la carpeta Kaggle_NoGafas")
+```
+
+Ahora se procede a cargar todas las imágenes que se indican en `filenames` usando `lapply()`:
+
+```{r, warning=FALSE, message=FALSE}
+lista_imagenes = lapply(filenames, leer_y_trs_img,path="./Kaggle_NoGafas/",x_l = 57,y_l = 71) 
+```
+
+El objeto `lista_imagenes` es una lista de imágenes. Cada componente es una imagen y se puede utilizar así:
+
+```{r}
+par(mfrow=c(1,2))
+plot(lista_imagenes[[2]],main="Ejemplo 1")
+plot(lista_imagenes[[8]],main="Ejemplo 2")
+```
+
+Ahora se vectorizan las imágenes. Es decir, que vista la imagen como una matriz, sus columnas se ponen una debajo de la otra hasta obtener un vector. Estos vectores luego serán las filas de una matriz de datos donde cada pixel representa una variable y cada imagen representa una observación. El resultado de hacer esto para todas las imágenes es una matriz que tiene tantas filas como imágenes y tantas columnas como pixeles tengan las imágenes. La función `as.numeric()` aplicada sobre cada imagen devuelve un vector. Se aplica entonces la función  `as.numeric()` sobre cada entrada del objeto `lista_imagenes` con la función `lapply()`.
+
+```{r warning=FALSE, message=FALSE}
+imagenes_vectorizadas<-lapply(lista_imagenes, as.numeric)
+```
+
+El resultado, `imagenes_vectorizadas`, es una lista de vectores que se concatenan llamando `rbind()` con `do.call()`. El resultado tiene esta dimensión:
+
+```{r}
+matriz_imagenes = do.call('rbind', imagenes_vectorizadas)
+pander(dim(matriz_imagenes)) # dimensión de la matriz resultante
+# as.data.frame.imlist es una alternativa
+```
+
+#### Estadísticos descriptivos - Kaggle Gafas
+
+Al tener una matriz de datos se pueden hacer todo lo que se hace con una matriz de datos. Sin embargo, el gran número de variables hace que utilizar la función `summary()` o la función `pairs()` sea poco práctico. Una aproximación puede ser generar estadísticas de resumen para cada pixel y luego ver estas estadísticas en forma de imágenes. 
+
+Veamos por ejemplo la imagen media:
+
+```{r warning=FALSE, message=FALSE}
+imagen_media_vec<-apply(matriz_imagenes,2,mean) # calcula el valor promedio para cada pixel 
+```
+
+
+
+```{r}
+imagen_media<-as.cimg(array(imagen_media_vec,dim=c(57,71)))
+plot(imagen_media,main="Imagen media de la carpeta Kaggle NoGafas")
+```
+
+De igual manera se puede calcular la imagen que representa las desviaciones estándar para cada pixel:
+
+```{r}
+imagen_sd_vec<-apply(matriz_imagenes,2,sd)
+imagen_sd<-as.cimg(array(imagen_sd_vec,dim=c(57,71)))
+plot(imagen_sd,main="Imagen SD de la carpeta Kaggle NoGafas")
+```
+
+#### Descartando información poco relevante
+
+La imagen de desviaciones estándares nos muestra varias zonas negras, donde el valor es cero. Estas zonas de baja variabilidad corresponden a pixeles poco informativos en esta muestra de imágenes. El fondo de la imagen, común para todos los individuos es, por ejemplo, una zona de baja variabilidad. Usemos el histograma de la imagen de desviaciones estándares para detectar estas zonas de baja variabilidad:
+
+```{r}
+MASS::truehist(imagen_sd,main="Histograma de variabilidad de Imagen SD",xlab="Variabilidad",ylab="Frecuencia")
+```
+
+Consideraremos que pixeles con una variabilidad inferior a 0.1 no serán relevantes en los siguientes análisis. La función `threshold()` asigna un 0 a cada pixel cuya intensidad está por debajo de cierto valor y 1 al resto de pixeles y nos devuelve una imagen. A continuación se usa esta función especificando un valor de umbral de 0.1:
+
+```{r}
+imagen_sd_tr<-threshold(imagen_sd,thr = 0.1)
+plot(imagen_sd_tr,main="Máscara")
+```
+
+La imagen `imagen_sd_tr` es una máscara. Las zonas en blanco representan los pixeles que se incluirán en los análisis y las zonas en negro los pixeles que se descartarán por su baja variabilidad.
+
+Veamos cuantos pixeles se descartan:
+
+```{r}
+pander(table(imagen_sd_tr),style='simple')
+```
+
+Calculemos el porcentaje de información descartada:
+
+```{r}
+pander(table(imagen_sd_tr)[1]/sum(table(imagen_sd_tr))*100,style='simple')
+```
+
+Esto quiere decir que aproximadamente el 6% de los datos están en zonas de baja variabilidad.
+
+### Carga de las imágenes Kaggle gafas
+
+Se repite el mismo procedimiento para la carpeta "Kaggle_Gafas".
+```{r message=FALSE}
+library(imager)
+filenames <- list.files(path = "./Kaggle_Gafas", pattern="*.png")
+```
+
+```{r message=FALSE}
+im <- load.image(paste0("./Kaggle_Gafas/",filenames[1]))
+plot(im,main="Imagen de la carpeta Kaggle_Gafas")
+```
+
+La dimensión de la imagen es:
+
+```{r}
+pander(dim(im))
+```
+
+Esto quiere decir que el objeto `im` es una sola imagen de $171 \times 213$ pixeles.
+
+#### Leer y transformar todas las imágenes
+
+A continuación se muestra usa la función para cargar una sola imagen:
+```{r, warning=FALSE}
+x<-leer_y_trs_img(filenames[1],path="./Kaggle_Gafas/",x_l = 57,y_l = 71)
+plot(x,main="Imagen de la carpeta Kaggle_Gafas")
+```
+
+Ahora se procede a cargar todas las imágenes que se indican en `filenames` usando `lapply()`:
+
+```{r, warning=FALSE, message=FALSE}
+lista_imagenes = lapply(filenames, leer_y_trs_img,path="./Kaggle_Gafas/",x_l = 57,y_l = 71) 
+```
+
+El objeto `lista_imagenes` es una lista de imágenes. Cada componente es una imagen y se puede utilizar así:
+
+```{r}
+par(mfrow=c(1,2))
+plot(lista_imagenes[[2]],main="Ejemplo 1")
+plot(lista_imagenes[[8]],main="Ejemplo 2")
+```
+
+```{r warning=FALSE, message=FALSE}
+imagenes_vectorizadas<-lapply(lista_imagenes, as.numeric)
+```
+
+El resultado, `imagenes_vectorizadas`, es una lista de vectores que se concatenan llamando `rbind()` con `do.call()`. El resultado tiene esta dimensión:
+
+```{r}
+matriz_imagenes = do.call('rbind', imagenes_vectorizadas)
+pander(dim(matriz_imagenes)) # dimensión de la matriz resultante
+# as.data.frame.imlist es una alternativa
+```
+
+#### Estadísticos descriptivos Kaggle gafas
+
+Al tener una matriz de datos se pueden hacer todo lo que se hace con una matriz de datos. Sin embargo, el gran número de variables hace que utilizar la función `summary()` o la función `pairs()` sea poco práctico. Una aproximación puede ser generar estadísticas de resumen para cada pixel y luego ver estas estadísticas en forma de imágenes. 
+
+Veamos por ejemplo la imagen media:
+
+```{r warning=FALSE, message=FALSE}
+imagen_media_vec<-apply(matriz_imagenes,2,mean) # calcula el valor promedio para cada pixel (columna)
+```
+
+
+
+```{r}
+imagen_media<-as.cimg(array(imagen_media_vec,dim=c(57,71)))
+plot(imagen_media,main="Imagen media de la carpeta Kaggle Gafas")
+```
+
+De igual manera se puede calcular la imagen que representa las desviaciones estándar para cada pixel:
+
+```{r}
+imagen_sd_vec<-apply(matriz_imagenes,2,sd)
+imagen_sd<-as.cimg(array(imagen_sd_vec,dim=c(57,71)))
+plot(imagen_sd,main="Imagen SD de la carpeta Kaggle Gafas")
+```
+
+#### Descartando información poco relevante
+
+La imagen de desviaciones estándares nos muestra varias zonas negras, donde el valor es cero. Estas zonas de baja variabilidad corresponden a pixeles poco informativos en esta muestra de imágenes. El fondo de la imagen, común para todos los individuos es, por ejemplo, una zona de baja variabilidad. Usemos el histograma de la imagen de desviaciones estándares para detectar estas zonas de baja variabilidad:
+
+```{r}
+MASS::truehist(imagen_sd,main="Histograma de variabilidad de Imagen SD",xlab="Variabilidad",ylab="Frecuencia")
+```
+
+Consideraremos que pixeles con una variabilidad inferior a 0.1 no serán relevantes en los siguientes análisis. La función `threshold()` asigna un 0 a cada pixel cuya intensidad está por debajo de cierto valor y 1 al resto de pixeles y nos devuelve una imagen. A continuación se usa esta función especificando un valor de umbral de 0.1:
+
+```{r}
+imagen_sd_tr<-threshold(imagen_sd,thr = 0.1)
+plot(imagen_sd_tr,main="Máscara")
+```
+
+La imagen `imagen_sd_tr` es una máscara. Las zonas en blanco representan los pixeles que se incluirán en los análisis y las zonas en negro los pixeles que se descartarán por su baja variabilidad.
+
+Veamos cuantos pixeles se descartan:
+
+```{r}
+pander(table(imagen_sd_tr),style='simple')
+```
+
+Calculemos el porcentaje de información descartada:
+
+```{r}
+pander(table(imagen_sd_tr)[1]/sum(table(imagen_sd_tr))*100,style='simple')
+```
+
+Esto quiere decir que aproximadamente el 5% de los datos están en zonas de baja variabilidad.
+
+### Carga de las imágenes Adiciones no gafas
+
+Se repite el mismo procedimiento para la carpeta "Adiciones_NoGafas".
+```{r message=FALSE}
+library(imager)
+filenames <- list.files(path = "./Adiciones_NoGafas", pattern="*.jpg")
+```
+
+```{r message=FALSE}
+im <- load.image(paste0("./Adiciones_NoGafas/",filenames[1]))
+plot(im,main="Imagen de la carpeta Adiciones_NoGafas")
+```
+
+La dimensión de la imagen es:
+
+```{r}
+pander(dim(im))
+```
+
+Esto quiere decir que el objeto `im` es una sola imagen de $171 \times 213$ pixeles.
+
+#### Leer y transformar todas las imágenes
+A continuación se muestra usa la función para cargar una sola imagen:
+
+```{r, warning=FALSE}
+x<-leer_y_trs_img(filenames[1],path="./Adiciones_NoGafas/",x_l = 57,y_l = 71)
+plot(x,main="Imagen de la carpeta Adiciones_NoGafas")
+```
+
+Ahora se procede a cargar todas las imágenes que se indican en `filenames` usando `lapply()`:
+
+```{r, warning=FALSE, message=FALSE}
+lista_imagenes = lapply(filenames, leer_y_trs_img,path="./Adiciones_NoGafas/",x_l = 57,y_l = 71) 
+```
+
+El objeto `lista_imagenes` es una lista de imágenes. Cada componente es una imagen y se puede utilizar así:
+
+```{r}
+par(mfrow=c(1,2))
+plot(lista_imagenes[[2]],main="Ejemplo 1")
+plot(lista_imagenes[[8]],main="Ejemplo 2")
+```
+
+```{r warning=FALSE, message=FALSE}
+imagenes_vectorizadas<-lapply(lista_imagenes, as.numeric)
+```
+
+El resultado, `imagenes_vectorizadas`, es una lista de vectores que se concatenan llamando `rbind()` con `do.call()`. El resultado tiene esta dimensión:
+
+```{r}
+matriz_imagenes = do.call('rbind', imagenes_vectorizadas)
+pander(dim(matriz_imagenes)) # dimensión de la matriz resultante
+# as.data.frame.imlist es una alternativa
+```
+
+#### Estadísticos descriptivos - Adiciones no gafas
+
+Al tener una matriz de datos se pueden hacer todo lo que se hace con una matriz de datos. Sin embargo, el gran número de variables hace que utilizar la función `summary()` o la función `pairs()` sea poco práctico. Una aproximación puede ser generar estadísticas de resumen para cada pixel y luego ver estas estadísticas en forma de imágenes. 
+
+Veamos por ejemplo la imagen media:
+
+```{r warning=FALSE, message=FALSE}
+imagen_media_vec<-apply(matriz_imagenes,2,mean) # calcula el valor promedio para cada pixel (columna)
+```
+
+
+
+```{r}
+imagen_media<-as.cimg(array(imagen_media_vec,dim=c(57,71)))
+plot(imagen_media,main="Imagen media de la carpeta Adiciones NoGafas")
+```
+
+De igual manera se puede calcular la imagen que representa las desviaciones estándar para cada pixel:
+
+```{r}
+imagen_sd_vec<-apply(matriz_imagenes,2,sd)
+imagen_sd<-as.cimg(array(imagen_sd_vec,dim=c(57,71)))
+plot(imagen_sd,main="Imagen SD de la carpeta Adiciones NoGafas")
+```
+
+#### Descartando información poco relevante
+
+La imagen de desviaciones estándares nos muestra varias zonas negras, donde el valor es cero. Estas zonas de baja variabilidad corresponden a pixeles poco informativos en esta muestra de imágenes. El fondo de la imagen, común para todos los individuos es, por ejemplo, una zona de baja variabilidad. Usemos el histograma de la imagen de desviaciones estándares para detectar estas zonas de baja variabilidad:
+
+```{r}
+MASS::truehist(imagen_sd,main="Histograma de variabilidad de Imagen SD",xlab="Variabilidad",ylab="Frecuencia")
+```
+
+Consideraremos que pixeles con una variabilidad inferior a 0.27 no serán relevantes en los siguientes análisis. La función `threshold()` asigna un 0 a cada pixel cuya intensidad está por debajo de cierto valor y 1 al resto de pixeles y nos devuelve una imagen. A continuación se usa esta función especificando un valor de umbral de 0.27:
+
+```{r}
+imagen_sd_tr<-threshold(imagen_sd,thr = 0.27)
+plot(imagen_sd_tr,main="Máscara")
+```
+
+La imagen `imagen_sd_tr` es una máscara. Las zonas en blanco representan los pixeles que se incluirán en los análisis y las zonas en negro los pixeles que se descartarán por su baja variabilidad.
+
+Veamos cuantos pixeles se descartan:
+
+```{r}
+pander(table(imagen_sd_tr), style='simple')
+```
+
+Calculemos el porcentaje de información descartada:
+
+```{r}
+pander(table(imagen_sd_tr)[1]/sum(table(imagen_sd_tr))*100,style='simple')
+```
+
+Esto quiere decir que aproximadamente el 3% de los datos están en zonas de baja variabilidad.
+
+### Carga de las imágenes Adiciones gafas
+
+Se repite el mismo procedimiento para la carpeta "Adiciones_Gafas".
+```{r message=FALSE}
+library(imager)
+filenames <- list.files(path = "./Adiciones_Gafas", pattern="*.jpg")
+```
+
+El objeto `filenames` es una lista que contiene las imágenes. Para cargar una imagen con la funcón `load.image()` se debe indicar la ruta completa. Para completar el nombre de la ruta se usa la función `paste0()`:
+
+```{r message=FALSE}
+im <- load.image(paste0("./Adiciones_Gafas/",filenames[1]))
+plot(im,main="Imagen de la carpeta Adiciones_NoGafas")
+```
+
+La dimensión de la imagen es:
+
+```{r}
+pander(dim(im))
+```
+
+Esto quiere decir que el objeto `im` es una sola imagen de $171 \times 213$ pixeles.
+
+#### Leer y transformar todas las imágenes
+
+A continuación se muestra usa la función para cargar una sola imagen:
+
+```{r, warning=FALSE}
+x<-leer_y_trs_img(filenames[1],path="./Adiciones_Gafas/",x_l = 57,y_l = 71)
+plot(x,main="Imagen de la carpeta Adiciones_Gafas")
+```
+
+Ahora se procede a cargar todas las imágenes que se indican en `filenames` usando `lapply()`:
+
+```{r, warning=FALSE, message=FALSE}
+lista_imagenes = lapply(filenames, leer_y_trs_img,path="./Adiciones_Gafas/",x_l = 57,y_l = 71) 
+```
+
+El objeto `lista_imagenes` es una lista de imágenes. Cada componente es una imagen y se puede utilizar así:
+
+```{r}
+par(mfrow=c(1,2))
+plot(lista_imagenes[[2]],main="Ejemplo 1")
+plot(lista_imagenes[[8]],main="Ejemplo 2")
+```
+
+```{r  warning=FALSE, message=FALSE}
+imagenes_vectorizadas<-lapply(lista_imagenes, as.numeric)
+```
+
+El resultado, `imagenes_vectorizadas`, es una lista de vectores que se concatenan llamando `rbind()` con `do.call()`. El resultado tiene esta dimensión:
+
+```{r}
+matriz_imagenes = do.call('rbind', imagenes_vectorizadas)
+pander(dim(matriz_imagenes)) # dimensión de la matriz resultante
+# as.data.frame.imlist es una alternativa
+```
+
+#### Estadísticos descriptivos - Adiciones gafas
+
+Al tener una matriz de datos se pueden hacer todo lo que se hace con una matriz de datos. Sin embargo, el gran número de variables hace que utilizar la función `summary()` o la función `pairs()` sea poco práctico. Una aproximación puede ser generar estadísticas de resumen para cada pixel y luego ver estas estadísticas en forma de imágenes. 
+
+Veamos por ejemplo la imagen media:
+
+```{r warning=FALSE, message=FALSE}
+imagen_media_vec<-apply(matriz_imagenes,2,mean) # calcula el valor promedio para cada pixel (columna)
+```
+
+
+
+```{r}
+imagen_media<-as.cimg(array(imagen_media_vec,dim=c(57,71)))
+plot(imagen_media,main="Imagen media de la carpeta Adiciones Gafas")
+```
+
+De igual manera se puede calcular la imagen que representa las desviaciones estándar para cada pixel:
+
+```{r}
+imagen_sd_vec<-apply(matriz_imagenes,2,sd)
+imagen_sd<-as.cimg(array(imagen_sd_vec,dim=c(57,71)))
+plot(imagen_sd,main="Imagen SD de la carpeta Adiciones Gafas")
+```
+
+#### Descartando información poco relevante
+
+La imagen de desviaciones estándares nos muestra varias zonas negras, donde el valor es cero. Estas zonas de baja variabilidad corresponden a pixeles poco informativos en esta muestra de imágenes. El fondo de la imagen, común para todos los individuos es, por ejemplo, una zona de baja variabilidad. Usemos el histograma de la imagen de desviaciones estándares para detectar estas zonas de baja variabilidad:
+
+```{r}
+MASS::truehist(imagen_sd,main="Histograma de variabilidad de Imagen SD",xlab="Variabilidad",ylab="Frecuencia")
+```
+
+Consideraremos que pixeles con una variabilidad inferior a 0.25 no serán relevantes en los siguientes análisis. La función `threshold()` asigna un 0 a cada pixel cuya intensidad está por debajo de cierto valor y 1 al resto de pixeles y nos devuelve una imagen. A continuación se usa esta función especificando un valor de umbral de 0.25:
+
+```{r}
+imagen_sd_tr<-threshold(imagen_sd,thr = 0.25)
+plot(imagen_sd_tr,main="Máscara")
+```
+
+La imagen `imagen_sd_tr` es una máscara. Las zonas en blanco representan los pixeles que se incluirán en los análisis y las zonas en negro los pixeles que se descartarán por su baja variabilidad.
+
+Veamos cuantos pixeles se descartan:
+
+```{r}
+pander(table(imagen_sd_tr),style='simple')
+```
+
+Calculemos el porcentaje de información descartada:
+
+```{r}
+pander(table(imagen_sd_tr)[1]/sum(table(imagen_sd_tr))*100,style='simple')
+```
+
+Esto quiere decir que aproximadamente el 2% de los datos están en zonas de baja variabilidad.
 
 ## Modelo
 
