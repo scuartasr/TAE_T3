@@ -1,6 +1,12 @@
 ---
-title: "Análisis de imagenes con análisis de componentes principales y regresión logística"
-author: "Equipo 7, TAE"
+title: "Clasificación de imágenes con redes neuronales convolucionales"
+author: 
+  - Equipo siete
+  - Simón Cuartas Rendón
+  - Camilo José Fúnez García
+  - Julián Ospina Murgueitio
+  - Deivid Zhang Figueroa
+  - Juliana Zuluaga Serna
 date: "Enero 31 de 2022"
 output:
   html_document:
@@ -39,13 +45,14 @@ Con esto, aprovechando las herramientas tecnológicas que se tienen a la mano, s
 
 # Documentación
 
-Para poder llevar a cabo la clasificación de imágenes de personas según si están luciendo gafas o no, es necesario contar con varios centenares de fotos de personas que permitan alimentar el algoritmo. Además, se debe tener en cuenta que van a existir dos conjuntos de imágenes diferentes: uno de **entrenamiento**, que contiene dos mil ciento dieciocho imágenes y con el cual se podrá generar el algoritmo que realice la clasificación; y otro de **prueba**, compuesto por seiscientas cuarenta  imágenes, y con el cual se puede verificar si el algoritmo entrenado con el conjunto anterior hace la tarea para la cual fue creado adecuadamente.
+Para poder llevar a cabo la clasificación de imágenes de personas según si están luciendo gafas o no, es necesario contar con varios centenares de fotos de personas que permitan alimentar el algoritmo. Además, se debe tener en cuenta que van a existir dos conjuntos de imágenes diferentes: uno de **entrenamiento**, que contiene dos mil ciento dieciocho imágenes y con el cual se podrá generar el algoritmo que realice la clasificación; un conjunto de **validación** con 495 imágenes; y otro de **prueba**, compuesto por seiscientas cuarenta  imágenes, y con el cual se puede verificar si el algoritmo entrenado con el conjunto anterior hace la tarea para la cual fue creado adecuadamente.
 
 Así, es necesario crear estas dos bases de datos, y para conseguirlo, se emplearon las siguientes tres fuentes de imágenes:
 
-* **1.** ***Kaggle.*** [*Kaggle*](https://www.kaggle.com) es una plataforma reconocida en el ámbito de la ciencia de datos, y en este se llevan a cabo competiciones y se alojan bases de datos con los cuales se puedan crear algoritmos de aprendizaje automático para poner en práctica los conocimientos de sus participantes. Entre estas bases de datos existe denominada ["*Glasses or No Glasses*"](https://www.kaggle.com/jeffheaton/glasses-or-no-glasses), en la que se incluyen cinco mil imágenes de personas con y sin gafas ordenadas de forma aleatoria, por lo que se tomaron las primeras mil quinientas imágenes para conformar un primer segmento del conjunto de **entrenamiento.**
-* **2.** Al inspeccionar la base de datos de *Kaggle* se observa que esta no tenía de suficientes fotografías de personas usando gafas de sol y diferentes a perspectivas frontales del rostro, pues todas eran fotos de perfil en primer plano, por lo que se seleccionan diversas imágenes en [*Google Images*](https://images.google.com/?gws_rd=ssl) para palear esta carencia. La totalidad de las fotografías obtenidas de *Google Images* han sido usadas en el conjunto de **entrenamiento.**
-* **3.** La Universidad de California en Irvine, conocida por sus siglas *UCI* posee un sitio web en el cual aloja diferentes bases de datos para poder usar en trabajos que impliquen [aprendizaje automático](https://archive.ics.uci.edu/ml/index.php), y entre ellas contienen una con quinientas imágenes de [personas](https://archive.ics.uci.edu/ml/datasets/CMU+Face+Images), con algunas de ellas portando gafas de sol y otras no, por lo que resultan útiles para este trabajo y que serán usadas en el conjunto de **prueba.**
+* **1.** ***Kaggle.*** [*Kaggle*](https://www.kaggle.com) es una plataforma reconocida en el ámbito de la ciencia de datos, y en este se llevan a cabo competiciones y se alojan bases de datos con los cuales se puedan crear algoritmos de aprendizaje automático para poner en práctica los conocimientos de sus participantes. Entre estas bases de datos existe denominada ["*Glasses or No Glasses*"](https://www.kaggle.com/jeffheaton/glasses-or-no-glasses), en la que se incluyen cinco mil imágenes de personas con y sin gafas ordenadas de forma aleatoria, por lo que se tomaron las primeras mil quinientas imágenes para conformar un primer segmento del conjunto de **entrenamiento.** 
+* **2.** Al inspeccionar la base de datos de *Kaggle* se observa que esta no tenía de suficientes fotografías de personas usando gafas de sol y diferentes a perspectivas frontales del rostro, pues todas eran fotos de perfil en primer plano, por lo que se seleccionan diversas imágenes en [*Google Images*](https://images.google.com/?gws_rd=ssl) para palear esta carencia. La totalidad de las fotografías obtenidas de *Google Images* han sido usadas en el conjunto de **entrenamiento.** Este conjunto se encuentra distribuido en las carpetas ***train***, ***Adiciones_gafas*** y ***Adiciones_No_Gafas*** de drive.
+* **4.** Del mismo dataset de kaggle mencionado anteriormente se extrajeron otras 495 imágenes para conformar el conjunto de **validación**. Se encuentran ubicadas en la carpeta ***Prediccion*** de drive.
+* **3.** La Universidad de California en Irvine, conocida por sus siglas *UCI* posee un sitio web en el cual aloja diferentes bases de datos para poder usar en trabajos que impliquen [aprendizaje automático](https://archive.ics.uci.edu/ml/index.php), y entre ellas contienen una con quinientas imágenes de [personas](https://archive.ics.uci.edu/ml/datasets/CMU+Face+Images), con algunas de ellas portando gafas de sol y otras no, por lo que resultan útiles para este trabajo y que serán usadas en el conjunto de **prueba.** Están ubicadas en la carpeta ***Faces*** de drive.
 
 
 # Herramientas y materiales
@@ -137,6 +144,8 @@ Se compila el modelo con algoritmo de optimización en la tasa de aprendizaje, a
 ![](ModelAccuracy.png)
 Por lo que se concluye que el modelo ajusta bien tanto el conjunto de entrenamiento como el de validación.
 
+*Nota:* el modelo se encuentra en el archivo ***Modelo_TAE_Trabajo3*** en la carpeta ***Modelo_Python*** en github.
+
 ## Resultados
 
 A continuación se muestra una imagen cualquiera del conjunto de prueba, la clasificación real a la que pertenece y la clasificación según el modelo:
@@ -158,6 +167,9 @@ Además, la matriz de confusión:
 
 Donde se obtiene que el modelo clasificó 267 de 320 fotos sin gafas correctamente, y 164 de 320 imágenes con gafas correctamente.
 
+*Nota:* los resultados detallados se encuentran en el archivo ***Modelo_Predicciones*** en la carpeta ***Modelo_Python*** en github.
+
+
 ## Preguntas
 
 ### 1. ¿Qué afecta la capacidad del modelo en el conjunto de validación?
@@ -174,6 +186,8 @@ plot(ejem,
 ```
 
 ### 2. ¿Hay alguna característica de las imágenes que mejore la capacidad de respuesta?
+
+Para el modelo debe ser más fácil detectar que tiene gafas cuando el individuo de la imagen usa gafas oscuras, ya que es un objeto más fácil de identificar a diferencia de las gafas transparentes; la calidad y el tamaño de la imagen también mejora la capacidad del modelo: si las imágenes están en el mismo tamaño y tienen buena calidad claramente el modelo se desempeñará mejor; y por supuesto, qué tan cerca esté la cara hace que sea más sencillo reconocer patrones en el rostro del individuo, cosa que pudo ser un poco más complicado con el conjunto de CMU, ya que gran parte de los rostros del conjunto de entrenamiento y validación estaban mucho más cerca de la cámara a diferencia de las de CMU.
 
 
 
